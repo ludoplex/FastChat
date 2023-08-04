@@ -127,7 +127,7 @@ async def api_get_status(request: Request):
     return {
         "model_names": [m for w in workers for m in w.model_names],
         "speed": 1,
-        "queue_length": sum([w.get_queue_length() for w in workers]),
+        "queue_length": sum(w.get_queue_length() for w in workers),
     }
 
 
@@ -225,14 +225,14 @@ if __name__ == "__main__":
             worker_map[model_name] = w
 
     # Register all models
-    url = args.controller_address + "/register_worker"
+    url = f"{args.controller_address}/register_worker"
     data = {
         "worker_name": workers[0].worker_addr,
         "check_heart_beat": not args.no_register,
         "worker_status": {
             "model_names": [m for w in workers for m in w.model_names],
             "speed": 1,
-            "queue_length": sum([w.get_queue_length() for w in workers]),
+            "queue_length": sum(w.get_queue_length() for w in workers),
         },
     }
     r = requests.post(url, json=data)

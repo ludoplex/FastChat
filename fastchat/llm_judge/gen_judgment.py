@@ -135,8 +135,7 @@ def make_match_single(
 
 
 def make_judge_pairwise(judge_model, judge_prompts):
-    judges = {}
-    judges["default"] = Judge(judge_model, judge_prompts["pair-v2"])
+    judges = {"default": Judge(judge_model, judge_prompts["pair-v2"])}
     judges["math"] = Judge(judge_model, judge_prompts["pair-math-v1"], ref_based=True)
     judges["default-mt"] = Judge(
         judge_model, judge_prompts["pair-v2-multi-turn"], multi_turn=True
@@ -151,8 +150,7 @@ def make_judge_pairwise(judge_model, judge_prompts):
 
 
 def make_judge_single(judge_model, judge_prompts):
-    judges = {}
-    judges["default"] = Judge(judge_model, judge_prompts["single-v1"])
+    judges = {"default": Judge(judge_model, judge_prompts["single-v1"])}
     judges["math"] = Judge(judge_model, judge_prompts["single-math-v1"], ref_based=True)
     judges["default-mt"] = Judge(
         judge_model, judge_prompts["single-v1-multi-turn"], multi_turn=True

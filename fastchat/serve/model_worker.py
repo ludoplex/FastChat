@@ -73,8 +73,7 @@ class BaseModelWorker:
         self.controller_addr = controller_addr
         self.worker_addr = worker_addr
         self.worker_id = worker_id
-        if model_path.endswith("/"):
-            model_path = model_path[:-1]
+        model_path = model_path.removesuffix("/")
         self.model_names = model_names or [model_path.split("/")[-1]]
         self.limit_worker_concurrency = limit_worker_concurrency
         if conv_template:
@@ -99,7 +98,7 @@ class BaseModelWorker:
     def register_to_controller(self):
         logger.info("Register to controller")
 
-        url = self.controller_addr + "/register_worker"
+        url = f"{self.controller_addr}/register_worker"
         data = {
             "worker_name": self.worker_addr,
             "check_heart_beat": True,
@@ -116,7 +115,7 @@ class BaseModelWorker:
             f"worker_id: {self.worker_id}. "
         )
 
-        url = self.controller_addr + "/receive_heart_beat"
+        url = f"{self.controller_addr}/receive_heart_beat"
 
         while True:
             try:
@@ -163,11 +162,10 @@ class BaseModelWorker:
         input_ids = self.tokenizer(prompt).input_ids
         input_echo_len = len(input_ids)
 
-        ret = {
+        return {
             "count": input_echo_len,
             "error_code": 0,
         }
-        return ret
 
     def get_conv_template(self):
         return {"conv": self.conv}
@@ -215,7 +213,7 @@ class ModelWorker(BaseModelWorker):
             awq_config=awq_config,
         )
         self.device = device
-        if self.tokenizer.pad_token == None:
+        if self.tokenizer.pad_token is None:
             self.tokenizer.pad_token = self.tokenizer.eos_token
         self.context_len = get_context_length(self.model.config)
         self.generate_stream_func = get_generate_stream_function(self.model, model_path)
@@ -274,8 +272,6 @@ class ModelWorker(BaseModelWorker):
             is_llama = "llama" in str(
                 type(self.model)
             )  # llama supports batch inference
-            is_chatglm = "chatglm" in str(type(self.model))
-            is_t5 = "t5" in str(type(self.model))
             if is_llama:
                 encoding = tokenizer.batch_encode_plus(
                     params["input"], padding=True, return_tensors="pt"
@@ -299,6 +295,8 @@ class ModelWorker(BaseModelWorker):
             else:
                 embedding = []
                 token_num = 0
+                is_chatglm = "chatglm" in str(type(self.model))
+                is_t5 = "t5" in str(type(self.model))
                 for text in params["input"]:
                     input_ids = tokenizer.encode(text, return_tensors="pt").to(
                         self.device

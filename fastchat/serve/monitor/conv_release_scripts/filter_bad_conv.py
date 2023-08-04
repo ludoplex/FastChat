@@ -55,11 +55,14 @@ def detect_type(conv):
                 if w in msg:
                     return TypeCode.BLOCKED_WORD
 
-    for key in ["model_a", "model_b"]:
-        if conv[key] in ["vicuna-33b", "mpt-30b-chat"]:
-            return TypeCode.BLOCKED_MODEL
-
-    return TypeCode.CORRECT
+    return next(
+        (
+            TypeCode.BLOCKED_MODEL
+            for key in ["model_a", "model_b"]
+            if conv[key] in ["vicuna-33b", "mpt-30b-chat"]
+        ),
+        TypeCode.CORRECT,
+    )
 
 
 if __name__ == "__main__":

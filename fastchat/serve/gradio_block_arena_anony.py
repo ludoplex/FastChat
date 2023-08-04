@@ -75,24 +75,24 @@ def vote_last_response(states, vote_type, model_selectors, request: gr.Request):
         data = {
             "tstamp": round(time.time(), 4),
             "type": vote_type,
-            "models": [x for x in model_selectors],
+            "models": list(model_selectors),
             "states": [x.dict() for x in states],
             "ip": request.client.host,
         }
         fout.write(json.dumps(data) + "\n")
 
     if ":" not in model_selectors[0]:
-        for i in range(15):
+        for _ in range(15):
             names = (
-                "### Model A: " + states[0].model_name,
-                "### Model B: " + states[1].model_name,
+                f"### Model A: {states[0].model_name}",
+                f"### Model B: {states[1].model_name}",
             )
             yield names + ("",) + (disable_btn,) * 4
             time.sleep(0.2)
     else:
         names = (
-            "### Model A: " + states[0].model_name,
-            "### Model B: " + states[1].model_name,
+            f"### Model A: {states[0].model_name}",
+            f"### Model B: {states[1].model_name}",
         )
         yield names + ("",) + (disable_btn,) * 4
 
@@ -101,40 +101,48 @@ def leftvote_last_response(
     state0, state1, model_selector0, model_selector1, request: gr.Request
 ):
     logger.info(f"leftvote (anony). ip: {request.client.host}")
-    for x in vote_last_response(
-        [state0, state1], "leftvote", [model_selector0, model_selector1], request
-    ):
-        yield x
+    yield from vote_last_response(
+        [state0, state1],
+        "leftvote",
+        [model_selector0, model_selector1],
+        request,
+    )
 
 
 def rightvote_last_response(
     state0, state1, model_selector0, model_selector1, request: gr.Request
 ):
     logger.info(f"rightvote (anony). ip: {request.client.host}")
-    for x in vote_last_response(
-        [state0, state1], "rightvote", [model_selector0, model_selector1], request
-    ):
-        yield x
+    yield from vote_last_response(
+        [state0, state1],
+        "rightvote",
+        [model_selector0, model_selector1],
+        request,
+    )
 
 
 def tievote_last_response(
     state0, state1, model_selector0, model_selector1, request: gr.Request
 ):
     logger.info(f"tievote (anony). ip: {request.client.host}")
-    for x in vote_last_response(
-        [state0, state1], "tievote", [model_selector0, model_selector1], request
-    ):
-        yield x
+    yield from vote_last_response(
+        [state0, state1],
+        "tievote",
+        [model_selector0, model_selector1],
+        request,
+    )
 
 
 def bothbad_vote_last_response(
     state0, state1, model_selector0, model_selector1, request: gr.Request
 ):
     logger.info(f"bothbad_vote (anony). ip: {request.client.host}")
-    for x in vote_last_response(
-        [state0, state1], "bothbad_vote", [model_selector0, model_selector1], request
-    ):
-        yield x
+    yield from vote_last_response(
+        [state0, state1],
+        "bothbad_vote",
+        [model_selector0, model_selector1],
+        request,
+    )
 
 
 def regenerate(state0, state1, request: gr.Request):
@@ -267,8 +275,7 @@ def add_text(
         )
 
     if enable_moderation:
-        flagged = violates_moderation(text)
-        if flagged:
+        if flagged := violates_moderation(text):
             logger.info(
                 f"violate moderation (anony). ip: {request.client.host}. text: {text}"
             )
@@ -337,18 +344,16 @@ def bot_response_multi(
         return
 
     states = [state0, state1]
-    gen = []
-    for i in range(num_sides):
-        gen.append(
-            bot_response(
-                states[i],
-                temperature,
-                top_p,
-                max_new_tokens,
-                request,
-            )
+    gen = [
+        bot_response(
+            states[i],
+            temperature,
+            top_p,
+            max_new_tokens,
+            request,
         )
-
+        for i in range(num_sides)
+    ]
     chatbots = [None] * num_sides
     while True:
         stop = True
@@ -398,7 +403,10 @@ Please scroll down and start chatting. You can view a leaderboard of participati
                 label = "Model A" if i == 0 else "Model B"
                 with gr.Column():
                     chatbots[i] = gr.Chatbot(
-                        label=label, elem_id=f"chatbot", visible=False, height=550
+                        label=label,
+                        elem_id="chatbot",
+                        visible=False,
+                        height=550,
                     )
 
         with gr.Box() as button_row:

@@ -90,12 +90,9 @@ def filter_invalid_roles(content):
         if len(c["conversations"]) <= 0:
             continue
 
-        valid = True
-        for j, s in enumerate(c["conversations"]):
-            if s["from"] != roles[j % 2]:
-                valid = False
-                break
-
+        valid = all(
+            s["from"] == roles[j % 2] for j, s in enumerate(c["conversations"])
+        )
         if valid:
             new_content.append(c)
 

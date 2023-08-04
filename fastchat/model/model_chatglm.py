@@ -59,7 +59,7 @@ def generate_stream_chatglm(
 
     gen_kwargs = {
         "max_length": max_new_tokens + input_echo_len,
-        "do_sample": True if temperature > 1e-5 else False,
+        "do_sample": temperature > 1e-5,
         "top_p": top_p,
         "repetition_penalty": repetition_penalty,
         "logits_processor": [invalid_score_processor],
@@ -71,10 +71,7 @@ def generate_stream_chatglm(
     for total_ids in model.stream_generate(**inputs, **gen_kwargs):
         total_ids = total_ids.tolist()[0]
         total_len = len(total_ids)
-        if echo:
-            output_ids = total_ids
-        else:
-            output_ids = total_ids[input_echo_len:]
+        output_ids = total_ids if echo else total_ids[input_echo_len:]
         response = tokenizer.decode(output_ids)
         response = process_response(response)
 
@@ -88,9 +85,7 @@ def generate_stream_chatglm(
             "finish_reason": None,
         }
 
-    # TODO: ChatGLM stop when it reach max length
-    # Only last stream result contains finish_reason, we set finish_reason as stop
-    ret = {
+    yield {
         "text": response,
         "usage": {
             "prompt_tokens": input_echo_len,
@@ -99,4 +94,3 @@ def generate_stream_chatglm(
         },
         "finish_reason": "stop",
     }
-    yield ret

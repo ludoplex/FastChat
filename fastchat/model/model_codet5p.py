@@ -47,15 +47,16 @@ def generate_stream_codet5p(
         eos_token_id=stop_token_ids,
     )
 
+
+
     class CodeBlockStopper(StoppingCriteria):
         def __call__(
-            self, input_ids: torch.LongTensor, scores: torch.FloatTensor, **kwargs
-        ) -> bool:
+                    self, input_ids: torch.LongTensor, scores: torch.FloatTensor, **kwargs
+                ) -> bool:
             # Code-completion is open-end generation.
             # We check \n\n to stop at end of a code block.
-            if list(input_ids[0][-2:]) == [628, 198]:
-                return True
-            return False
+            return list(input_ids[0][-2:]) == [628, 198]
+
 
     gen_kwargs = dict(
         **encoding,
@@ -83,11 +84,7 @@ def generate_stream_codet5p(
         if i >= max_new_tokens:
             break
 
-    if i >= max_new_tokens:
-        finish_reason = "length"
-    else:
-        finish_reason = "stop"
-
+    finish_reason = "length" if i >= max_new_tokens else "stop"
     yield {
         "text": output,
         "usage": {

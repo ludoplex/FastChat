@@ -44,13 +44,9 @@ for i in range(len(IDENTITY_WORDS)):
 def get_log_files(max_num_files=None):
     dates = []
     for month in [4, 5, 6, 7]:
-        for day in range(1, 32):
-            dates.append(f"2023-{month:02d}-{day:02d}")
-
+        dates.extend(f"2023-{month:02d}-{day:02d}" for day in range(1, 32))
     for month in [8]:
-        for day in range(1, 32):
-            dates.append(f"2023-{month:02d}-{day:02d}")
-
+        dates.extend(f"2023-{month:02d}-{day:02d}" for day in range(1, 32))
     filenames = []
     for d in dates:
         for i in range(NUM_SERVERS):
@@ -58,8 +54,7 @@ def get_log_files(max_num_files=None):
             if os.path.exists(name):
                 filenames.append(name)
     max_num_files = max_num_files or len(filenames)
-    filenames = filenames[-max_num_files:]
-    return filenames
+    return filenames[-max_num_files:]
 
 
 def remove_html(raw):
@@ -70,16 +65,15 @@ def remove_html(raw):
 
 def to_openai_format(messages):
     roles = ["user", "assistant"]
-    ret = []
-    for i, x in enumerate(messages):
-        ret.append({"role": roles[i % 2], "content": x[1]})
-    return ret
+    return [
+        {"role": roles[i % 2], "content": x[1]} for i, x in enumerate(messages)
+    ]
 
 
 def clean_battle_data(log_files):
     data = []
     for filename in tqdm(log_files, desc="read files"):
-        for retry in range(5):
+        for _ in range(5):
             try:
                 lines = open(filename).readlines()
                 break
@@ -99,7 +93,7 @@ def clean_battle_data(log_files):
     }
 
     all_models = set()
-    all_ips = dict()
+    all_ips = {}
     ct_anony = 0
     ct_invalid = 0
     ct_leaked_identity = 0
@@ -126,14 +120,14 @@ def clean_battle_data(log_files):
             ct_invalid += 1
             continue
 
-        if models_public[0] == "" or models_public[0] == "Model A":
+        if models_public[0] in ["", "Model A"]:
             anony = True
             models = models_hidden
             ct_anony += 1
         else:
             anony = False
             models = models_public
-            if not models_public == models_hidden:
+            if models != models_hidden:
                 ct_invalid += 1
                 continue
 
@@ -144,19 +138,13 @@ def clean_battle_data(log_files):
             continue
         lang_code = detect_language(state["messages"][state["offset"]][1])
 
-        # Drop conversations if the model names are leaked
-        leaked_identity = False
         messages = ""
         for i in range(2):
             state = row["states"][i]
             for role, msg in state["messages"][state["offset"] :]:
                 if msg:
                     messages += msg.lower()
-        for word in IDENTITY_WORDS:
-            if word in messages:
-                leaked_identity = True
-                break
-
+        leaked_identity = any(word in messages for word in IDENTITY_WORDS)
         if leaked_identity:
             ct_leaked_identity += 1
             continue

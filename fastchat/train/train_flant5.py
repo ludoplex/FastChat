@@ -207,9 +207,6 @@ def _add_speaker_and_signal(header, source, get_conversation=True):
                     + roles.get(next_sentence["from"].lower(), unknown_role)
                     + ": "
                 )
-            else:
-                # if human is the last speaker, it does not contribute to an answer
-                pass
         else:
             sentence["value"] = sentence["value"] + END_SIGNAL
         if get_conversation:

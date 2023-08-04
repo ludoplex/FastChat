@@ -38,10 +38,10 @@ def main(args):
     inputs = {k: torch.tensor(v).to(args.device) for k, v in inputs.items()}
     output_ids = model.generate(
         **inputs,
-        do_sample=True if args.temperature > 1e-5 else False,
+        do_sample=args.temperature > 1e-5,
         temperature=args.temperature,
         repetition_penalty=args.repetition_penalty,
-        max_new_tokens=args.max_new_tokens,
+        max_new_tokens=args.max_new_tokens
     )
 
     if model.config.is_encoder_decoder:

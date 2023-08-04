@@ -137,11 +137,6 @@ def preprocess(
 
         target[cur_len:] = IGNORE_TOKEN_ID
 
-        if False:  # Inspect and check the correctness of masking
-            z = target.clone()
-            z = torch.where(z == IGNORE_TOKEN_ID, tokenizer.unk_token_id, z)
-            rank0_print(tokenizer.decode(z))
-
         if cur_len < tokenizer.model_max_length:
             if cur_len != total_len:
                 target[:] = IGNORE_TOKEN_ID

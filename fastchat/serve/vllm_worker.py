@@ -83,10 +83,7 @@ class VLLMWorker(BaseModelWorker):
         for tid in stop_token_ids:
             stop.append(self.tokenizer.decode(tid))
 
-        # make sampling params in vllm
-        top_p = max(top_p, 1e-5)
-        if temperature <= 1e-5:
-            top_p = 1.0
+        top_p = 1.0 if temperature <= 1e-5 else max(top_p, 1e-5)
         sampling_params = SamplingParams(
             n=1,
             temperature=temperature,

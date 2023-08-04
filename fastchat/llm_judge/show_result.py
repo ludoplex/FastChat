@@ -62,8 +62,12 @@ def display_result_pairwise(args):
             if args.baseline_model not in [row["model_1"], row["model_2"]]:
                 continue
         if row["g1_winner"] == "tie" or row["g1_winner"] != row["g2_winner"]:
-            list_res.append({"model": row["model_1"], "win": 0, "loss": 0, "tie": 1})
-            list_res.append({"model": row["model_2"], "win": 0, "loss": 0, "tie": 1})
+            list_res.extend(
+                (
+                    {"model": row["model_1"], "win": 0, "loss": 0, "tie": 1},
+                    {"model": row["model_2"], "win": 0, "loss": 0, "tie": 1},
+                )
+            )
         else:
             if row["g1_winner"] == "model_1":
                 winner = row["model_1"]
@@ -71,9 +75,12 @@ def display_result_pairwise(args):
             else:
                 winner = row["model_2"]
                 loser = row["model_1"]
-            list_res.append({"model": winner, "win": 1, "loss": 0, "tie": 0})
-            list_res.append({"model": loser, "win": 0, "loss": 1, "tie": 0})
-
+            list_res.extend(
+                (
+                    {"model": winner, "win": 1, "loss": 0, "tie": 0},
+                    {"model": loser, "win": 0, "loss": 1, "tie": 0},
+                )
+            )
     df = pd.DataFrame(list_res)
     df = df.groupby(["model"]).sum()
 
@@ -119,11 +126,13 @@ if __name__ == "__main__":
     )
     args = parser.parse_args()
 
-    if args.mode == "single":
+    if args.mode == "pairwise-all":
+        args.baseline_model = None
+        display_result_func = display_result_pairwise
+
+    elif args.mode == "single":
         display_result_func = display_result_single
     else:
-        if args.mode == "pairwise-all":
-            args.baseline_model = None
         display_result_func = display_result_pairwise
 
     print(f"Mode: {args.mode}")

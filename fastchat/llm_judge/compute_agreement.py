@@ -52,15 +52,11 @@ def get_mt_bench_votes_data(raw_votes):
 
 
 def convertvote(vote):
-    if "tie" in vote:
-        return "tie"
-    return vote
+    return "tie" if "tie" in vote else vote
 
 
 def equalvote(vote1, vote2):
-    if "tie" in vote1 and "tie" in vote2:
-        return True
-    return vote1 == vote2
+    return True if "tie" in vote1 and "tie" in vote2 else vote1 == vote2
 
 
 # data: Dict[qid -> List[vote]]

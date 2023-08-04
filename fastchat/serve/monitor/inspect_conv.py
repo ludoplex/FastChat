@@ -13,9 +13,7 @@ from tqdm import tqdm
 def get_log_files(max_num_files=None):
     dates = []
     for month in [4, 5]:
-        for day in range(1, 32):
-            dates.append(f"2023-{month:02d}-{day:02d}")
-
+        dates.extend(f"2023-{month:02d}-{day:02d}" for day in range(1, 32))
     num_servers = 14
     filenames = []
     for d in dates:
@@ -24,8 +22,7 @@ def get_log_files(max_num_files=None):
             if os.path.exists(name):
                 filenames.append(name)
     max_num_files = max_num_files or len(filenames)
-    filenames = filenames[-max_num_files:]
-    return filenames
+    return filenames[-max_num_files:]
 
 
 def pretty_print_conversation(messages):
@@ -36,7 +33,7 @@ def pretty_print_conversation(messages):
 def inspect_convs(log_files):
     data = []
     for filename in tqdm(log_files, desc="read files"):
-        for retry in range(5):
+        for _ in range(5):
             try:
                 lines = open(filename).readlines()
                 break

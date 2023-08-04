@@ -19,20 +19,16 @@ def get_embedding_from_api(word, model="vicuna-7b-v1.1"):
             model=model,
             input=word,
         )
-        embedding = np.array(resp["data"][0]["embedding"])
-        return embedding
-
+        return np.array(resp["data"][0]["embedding"])
     url = "http://localhost:8000/v1/embeddings"
     headers = {"Content-Type": "application/json"}
     data = json.dumps({"model": model, "input": word})
 
     response = requests.post(url, headers=headers, data=data)
     if response.status_code == 200:
-        embedding = np.array(response.json()["data"][0]["embedding"])
-        return embedding
-    else:
-        print(f"Error: {response.status_code} - {response.text}")
-        return None
+        return np.array(response.json()["data"][0]["embedding"])
+    print(f"Error: {response.status_code} - {response.text}")
+    return None
 
 
 def create_embedding_data_frame(data_path, model, max_tokens=500):
@@ -69,7 +65,7 @@ def train_random_forest(df):
 input_datapath = "amazon_fine_food_review.csv"
 if not os.path.exists(input_datapath):
     raise Exception(
-        f"Please download data from: https://www.kaggle.com/datasets/snap/amazon-fine-food-reviews"
+        "Please download data from: https://www.kaggle.com/datasets/snap/amazon-fine-food-reviews"
     )
 
 df = create_embedding_data_frame(input_datapath, "vicuna-7b-v1.1")

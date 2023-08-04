@@ -96,14 +96,13 @@ def set_global_vars(controller_url_, enable_moderation_):
 
 def get_conv_log_filename():
     t = datetime.datetime.now()
-    name = os.path.join(LOGDIR, f"{t.year}-{t.month:02d}-{t.day:02d}-conv.json")
-    return name
+    return os.path.join(LOGDIR, f"{t.year}-{t.month:02d}-{t.day:02d}-conv.json")
 
 
 def get_model_list(controller_url, add_chatgpt, add_claude, add_palm):
-    ret = requests.post(controller_url + "/refresh_all_workers")
+    ret = requests.post(f"{controller_url}/refresh_all_workers")
     assert ret.status_code == 200
-    ret = requests.post(controller_url + "/list_models")
+    ret = requests.post(f"{controller_url}/list_models")
     models = ret.json()["models"]
 
     # Add API providers
@@ -217,8 +216,7 @@ def add_text(state, model_selector, text, request: gr.Request):
         return (state, state.to_gradio_chatbot(), INACTIVE_MSG) + (no_change_btn,) * 5
 
     if enable_moderation:
-        flagged = violates_moderation(text)
-        if flagged:
+        if flagged := violates_moderation(text):
             logger.info(f"violate moderation. ip: {request.client.host}. text: {text}")
             state.skip_next = True
             return (state, state.to_gradio_chatbot(), MODERATION_MSG) + (
@@ -276,7 +274,7 @@ def model_worker_stream_iter(
 
     # Stream output
     response = requests.post(
-        worker_addr + "/worker_generate_stream",
+        f"{worker_addr}/worker_generate_stream",
         headers=headers,
         json=gen_params,
         stream=True,
@@ -284,8 +282,7 @@ def model_worker_stream_iter(
     )
     for chunk in response.iter_lines(decode_unicode=False, delimiter=b"\0"):
         if chunk:
-            data = json.loads(chunk.decode())
-            yield data
+            yield json.loads(chunk.decode())
 
 
 def bot_response(state, temperature, top_p, max_new_tokens, request: gr.Request):
@@ -302,12 +299,12 @@ def bot_response(state, temperature, top_p, max_new_tokens, request: gr.Request)
         return
 
     conv, model_name = state.conv, state.model_name
-    if model_name == "gpt-3.5-turbo" or model_name == "gpt-4":
+    if model_name in ["gpt-3.5-turbo", "gpt-4"]:
         prompt = conv.to_openai_api_messages()
         stream_iter = openai_api_stream_iter(
             model_name, prompt, temperature, top_p, max_new_tokens
         )
-    elif model_name == "claude-2" or model_name == "claude-instant-1":
+    elif model_name in ["claude-2", "claude-instant-1"]:
         prompt = conv.get_prompt()
         stream_iter = anthropic_api_stream_iter(
             model_name, prompt, temperature, top_p, max_new_tokens
@@ -319,7 +316,7 @@ def bot_response(state, temperature, top_p, max_new_tokens, request: gr.Request)
     else:
         # Query worker address
         ret = requests.post(
-            controller_url + "/get_worker_address", json={"model": model_name}
+            f"{controller_url}/get_worker_address", json={"model": model_name}
         )
         worker_addr = ret.json()["address"]
         logger.info(f"model_name: {model_name}, worker_addr: {worker_addr}")
@@ -343,11 +340,7 @@ def bot_response(state, temperature, top_p, max_new_tokens, request: gr.Request)
         prompt = conv.get_prompt()
 
         # Set repetition_penalty
-        if "t5" in model_name:
-            repetition_penalty = 1.2
-        else:
-            repetition_penalty = 1.0
-
+        repetition_penalty = 1.2 if "t5" in model_name else 1.0
         stream_iter = model_worker_stream_iter(
             conv,
             model_name,
@@ -368,7 +361,7 @@ def bot_response(state, temperature, top_p, max_new_tokens, request: gr.Request)
                 output = data["text"].strip()
                 if "vicuna" in model_name:
                     output = post_process_code(output)
-                conv.update_last_message(output + "▌")
+                conv.update_last_message(f"{output}▌")
                 yield (state, state.to_gradio_chatbot()) + (disable_btn,) * 5
             else:
                 output = data["text"] + f"\n\n(error_code: {data['error_code']})"

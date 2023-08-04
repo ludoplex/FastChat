@@ -18,9 +18,7 @@ NUM_SERVERS = 14
 def get_log_files(max_num_files=None):
     dates = []
     for month in range(4, 9):
-        for day in range(1, 33):
-            dates.append(f"2023-{month:02d}-{day:02d}")
-
+        dates.extend(f"2023-{month:02d}-{day:02d}" for day in range(1, 33))
     filenames = []
     for d in dates:
         for i in range(NUM_SERVERS):
@@ -28,14 +26,13 @@ def get_log_files(max_num_files=None):
             if os.path.exists(name):
                 filenames.append(name)
     max_num_files = max_num_files or len(filenames)
-    filenames = filenames[-max_num_files:]
-    return filenames
+    return filenames[-max_num_files:]
 
 
 def load_log_files(log_files):
     data = []
     for filename in tqdm(log_files, desc="read files"):
-        for retry in range(5):
+        for _ in range(5):
             try:
                 lines = open(filename).readlines()
                 break
@@ -71,7 +68,7 @@ def merge_counts(series, on, names):
         ret = pd.merge(ret, series[i], on=on)
     ret = ret.reset_index()
     old_names = list(ret.columns)[-len(series) :]
-    rename = {old_name: new_name for old_name, new_name in zip(old_names, names)}
+    rename = dict(zip(old_names, names))
     ret = ret.rename(columns=rename)
     return ret
 

@@ -117,7 +117,6 @@ def generate_stream(
             else:
                 out = model(torch.as_tensor([input_ids], device=device), use_cache=True)
                 logits = out.logits
-            past_key_values = out.past_key_values
         else:  # decoding
             if model.config.is_encoder_decoder:
                 out = model.decoder(
@@ -128,8 +127,6 @@ def generate_stream(
                     use_cache=True,
                     past_key_values=past_key_values if not sent_interrupt else None,
                 )
-                sent_interrupt = False
-
                 logits = model.lm_head(out[0])
             else:
                 out = model(
@@ -139,10 +136,10 @@ def generate_stream(
                     use_cache=True,
                     past_key_values=past_key_values if not sent_interrupt else None,
                 )
-                sent_interrupt = False
                 logits = out.logits
-            past_key_values = out.past_key_values
+            sent_interrupt = False
 
+        past_key_values = out.past_key_values
         if logits_processor:
             if repetition_penalty > 1.0:
                 tmp_output_ids = torch.as_tensor([output_ids], device=logits.device)
@@ -166,11 +163,7 @@ def generate_stream(
         token = tokens[0]
         output_ids.append(token)
 
-        if token in stop_token_ids:
-            stopped = True
-        else:
-            stopped = False
-
+        stopped = token in stop_token_ids
         # Yield the output tokens
         if i % stream_interval == 0 or i == max_new_tokens - 1 or stopped:
             if echo:
@@ -379,8 +372,8 @@ def chat_loop(
 
             # Check if file exists and add .json if needed
             if not os.path.exists(filename):
-                if (not filename.endswith(".json")) and os.path.exists(
-                    filename + ".json"
+                if not filename.endswith(".json") and os.path.exists(
+                    f"{filename}.json"
                 ):
                     filename += ".json"
                 else:
