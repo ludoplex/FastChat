@@ -34,8 +34,7 @@ class RwkvModel:
         logits, state = self.model.forward(input_ids, past_key_values)
         # print(logits)
         logits = logits.unsqueeze(0).unsqueeze(0)
-        out = SimpleNamespace(logits=logits, past_key_values=state)
-        return out
+        return SimpleNamespace(logits=logits, past_key_values=state)
 
     def generate(
         self, input_ids, do_sample, temperature, max_new_tokens, repetition_penalty=1.0

@@ -36,19 +36,14 @@ def run_eval(
 
     # Split the question file into `num_gpus` files
     assert num_gpus_total % num_gpus_per_model == 0
-    use_ray = num_gpus_total // num_gpus_per_model > 1
-
-    if use_ray:
-        get_answers_func = ray.remote(num_gpus=num_gpus_per_model)(
-            get_model_answers
-        ).remote
-    else:
-        get_answers_func = get_model_answers
-
-    chunk_size = len(questions) // (num_gpus_total // num_gpus_per_model) // 2
-    ans_handles = []
-    for i in range(0, len(questions), chunk_size):
-        ans_handles.append(
+    if use_ray := num_gpus_total // num_gpus_per_model > 1:
+        get_answers_func = (
+            ray.remote(num_gpus=num_gpus_per_model)(get_model_answers).remote
+            if use_ray
+            else get_model_answers
+        )
+        chunk_size = len(questions) // (num_gpus_total // num_gpus_per_model) // 2
+        ans_handles = [
             get_answers_func(
                 model_path,
                 model_id,
@@ -59,9 +54,8 @@ def run_eval(
                 num_gpus_per_model,
                 max_gpu_memory,
             )
-        )
-
-    if use_ray:
+            for i in range(0, len(questions), chunk_size)
+        ]
         ray.get(ans_handles)
 
 
@@ -104,11 +98,7 @@ def get_model_answers(
                 prompt = conv.get_prompt()
                 input_ids = tokenizer([prompt]).input_ids
 
-                if temperature < 1e-4:
-                    do_sample = False
-                else:
-                    do_sample = True
-
+                do_sample = temperature >= 1e-4
                 # some models may error out when generating long outputs
                 try:
                     output_ids = model.generate(

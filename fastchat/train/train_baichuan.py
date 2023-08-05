@@ -133,11 +133,6 @@ def mask_targets(conversations, targets, tokenizer, conv):
 
         target[cur_len:] = IGNORE_TOKEN_ID
 
-        if False:  # Inspect and check the correctness of masking
-            z = target.clone()
-            z = torch.where(z == IGNORE_TOKEN_ID, tokenizer.unk_token_id, z)
-            rank0_print(tokenizer.decode(z))
-
         if cur_len < tokenizer.model_max_length:
             if cur_len != total_len:
                 target[:] = IGNORE_TOKEN_ID
@@ -251,7 +246,7 @@ def make_supervised_data_module(
         raw_data = json.load(open(data_path, "r"))
     elif data_path.endswith(".jsonl"):
         with jsonlines.open(data_path, mode="r") as reader:
-            raw_data = [item for item in reader]
+            raw_data = list(reader)
 
     # Split train/test
     np.random.seed(0)

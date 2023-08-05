@@ -12,11 +12,7 @@ from transformers import AutoTokenizer, AutoModelForCausalLM
 
 
 def upload_hub(model_path, hub_repo_id, component, private):
-    if component == "all":
-        components = ["model", "tokenizer"]
-    else:
-        components = [component]
-
+    components = ["model", "tokenizer"] if component == "all" else [component]
     kwargs = {"push_to_hub": True, "repo_id": hub_repo_id, "private": args.private}
 
     if "model" in components:

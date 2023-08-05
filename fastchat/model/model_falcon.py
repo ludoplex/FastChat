@@ -67,20 +67,11 @@ def generate_stream_falcon(
     thread = Thread(target=model.generate, kwargs=generation_kwargs)
     thread.start()
 
-    if echo:
-        # means keep the prompt
-        output = prompt
-    else:
-        output = ""
-
+    output = prompt if echo else ""
     for i, new_text in enumerate(streamer):
         output += new_text
         if i % stream_interval == 0:
-            if echo:
-                rfind_start = len_prompt
-            else:
-                rfind_start = 0
-
+            rfind_start = len_prompt if echo else 0
             partially_stopped = False
             if stop_str:
                 if isinstance(stop_str, str):

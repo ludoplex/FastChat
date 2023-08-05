@@ -26,11 +26,14 @@ def tokenize_one_sample(c):
 def tokenize_dataset(content):
     processed = []
     with ProcessPoolExecutor() as executor:
-        for result in tqdm(
-            executor.map(tokenize_one_sample, content), total=len(content)
-        ):
-            processed.append(result)
-
+        processed.extend(
+            iter(
+                tqdm(
+                    executor.map(tokenize_one_sample, content),
+                    total=len(content),
+                )
+            )
+        )
     return processed
 
 

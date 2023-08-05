@@ -1,5 +1,6 @@
 """Count the unique users in a battle log file."""
 
+
 import argparse
 import json
 
@@ -12,10 +13,7 @@ if __name__ == "__main__":
 
     # build index
     objs = json.load(open(args.tag_file))
-    new_field_dict = {}
-    for obj in objs:
-        new_field_dict[obj["question_id"]] = obj["toxic_chat"]
-
+    new_field_dict = {obj["question_id"]: obj["toxic_chat"] for obj in objs}
     objs = json.load(open(args.input))
     for obj in objs:
         obj["toxic_chat_tag"] = new_field_dict[obj["question_id"]]

@@ -65,10 +65,7 @@ def html_to_markdown(val: str) -> str:
 
 def contain_blocked_words(val: str) -> bool:
     blocked_words = ["openai", "chatgpt"]
-    for w in blocked_words:
-        if w in val.lower():
-            return True
-    return False
+    return any(w in val.lower() for w in blocked_words)
 
 
 def clean_html_one_sample(sample):
@@ -140,11 +137,14 @@ def clean_html_all(content, begin, end):
     content = content[begin:end]
     processed = []
     with ProcessPoolExecutor() as executor:
-        for result in tqdm(
-            executor.map(clean_html_one_sample, content), total=len(content)
-        ):
-            processed.append(result)
-
+        processed.extend(
+            iter(
+                tqdm(
+                    executor.map(clean_html_one_sample, content),
+                    total=len(content),
+                )
+            )
+        )
     visited = {}
     new_content = []
     for sample, error_code in processed:

@@ -52,7 +52,7 @@ if __name__ == "__main__":
         battles = battles[: args.first_n]
 
     with ThreadPoolExecutor(args.parallel) as executor:
-        for line in tqdm(
+        for _ in tqdm(
             executor.map(tag_openai_moderation, battles), total=len(battles)
         ):
             pass

@@ -14,14 +14,14 @@ def main():
         worker_addr = args.worker_address
     else:
         controller_addr = args.controller_address
-        ret = requests.post(controller_addr + "/refresh_all_workers")
-        ret = requests.post(controller_addr + "/list_models")
+        ret = requests.post(f"{controller_addr}/refresh_all_workers")
+        ret = requests.post(f"{controller_addr}/list_models")
         models = ret.json()["models"]
         models.sort()
         print(f"Models: {models}")
 
         ret = requests.post(
-            controller_addr + "/get_worker_address", json={"model": model_name}
+            f"{controller_addr}/get_worker_address", json={"model": model_name}
         )
         worker_addr = ret.json()["address"]
         print(f"worker_addr: {worker_addr}")
@@ -46,7 +46,7 @@ def main():
         "echo": False,
     }
     response = requests.post(
-        worker_addr + "/worker_generate_stream",
+        f"{worker_addr}/worker_generate_stream",
         headers=headers,
         json=gen_params,
         stream=True,

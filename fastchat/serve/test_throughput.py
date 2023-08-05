@@ -14,14 +14,15 @@ def main():
         worker_addr = args.worker_address
     else:
         controller_addr = args.controller_address
-        ret = requests.post(controller_addr + "/refresh_all_workers")
-        ret = requests.post(controller_addr + "/list_models")
+        ret = requests.post(f"{controller_addr}/refresh_all_workers")
+        ret = requests.post(f"{controller_addr}/list_models")
         models = ret.json()["models"]
         models.sort()
         print(f"Models: {models}")
 
         ret = requests.post(
-            controller_addr + "/get_worker_address", json={"model": args.model_name}
+            f"{controller_addr}/get_worker_address",
+            json={"model": args.model_name},
         )
         worker_addr = ret.json()["address"]
         print(f"worker_addr: {worker_addr}")
@@ -49,14 +50,15 @@ def main():
     def send_request(results, i):
         if args.test_dispatch:
             ret = requests.post(
-                controller_addr + "/get_worker_address", json={"model": args.model_name}
+                f"{controller_addr}/get_worker_address",
+                json={"model": args.model_name},
             )
             thread_worker_addr = ret.json()["address"]
         else:
             thread_worker_addr = worker_addr
         print(f"thread {i} goes to {thread_worker_addr}")
         response = requests.post(
-            thread_worker_addr + "/worker_generate_stream",
+            f"{thread_worker_addr}/worker_generate_stream",
             headers=headers,
             json=ploads[i],
             stream=False,

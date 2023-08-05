@@ -80,7 +80,7 @@ def vote_last_response(states, vote_type, model_selectors, request: gr.Request):
         data = {
             "tstamp": round(time.time(), 4),
             "type": vote_type,
-            "models": [x for x in model_selectors],
+            "models": list(model_selectors),
             "states": [x.dict() for x in states],
             "ip": request.client.host,
         }
@@ -189,8 +189,7 @@ def add_text(
         )
 
     if enable_moderation:
-        flagged = violates_moderation(text)
-        if flagged:
+        if flagged := violates_moderation(text):
             logger.info(
                 f"violate moderation (named). ip: {request.client.host}. text: {text}"
             )
@@ -259,18 +258,16 @@ def bot_response_multi(
         return
 
     states = [state0, state1]
-    gen = []
-    for i in range(num_sides):
-        gen.append(
-            bot_response(
-                states[i],
-                temperature,
-                top_p,
-                max_new_tokens,
-                request,
-            )
+    gen = [
+        bot_response(
+            states[i],
+            temperature,
+            top_p,
+            max_new_tokens,
+            request,
         )
-
+        for i in range(num_sides)
+    ]
     chatbots = [None] * num_sides
     while True:
         stop = True
@@ -338,7 +335,10 @@ By using this service, users are required to agree to the following terms: The s
                 label = "Model A" if i == 0 else "Model B"
                 with gr.Column():
                     chatbots[i] = gr.Chatbot(
-                        label=label, elem_id=f"chatbot", visible=False, height=550
+                        label=label,
+                        elem_id="chatbot",
+                        visible=False,
+                        height=550,
                     )
 
         with gr.Box() as button_row:

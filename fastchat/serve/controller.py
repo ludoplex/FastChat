@@ -41,7 +41,7 @@ class DispatchMethod(Enum):
         elif name == "shortest_queue":
             return cls.SHORTEST_QUEUE
         else:
-            raise ValueError(f"Invalid dispatch method")
+            raise ValueError("Invalid dispatch method")
 
 
 @dataclasses.dataclass
@@ -96,7 +96,7 @@ class Controller:
 
     def get_worker_status(self, worker_name: str):
         try:
-            r = requests.post(worker_name + "/worker_get_status", timeout=5)
+            r = requests.post(f"{worker_name}/worker_get_status", timeout=5)
         except requests.exceptions.RequestException as e:
             logger.error(f"Get status fails: {worker_name}, {e}")
             return None
@@ -139,27 +139,8 @@ class Controller:
             if norm < 1e-4:
                 return ""
             worker_speeds = worker_speeds / norm
-            if True:  # Directly return address
-                pt = np.random.choice(np.arange(len(worker_names)), p=worker_speeds)
-                worker_name = worker_names[pt]
-                return worker_name
-
-            # Check status before returning
-            while True:
-                pt = np.random.choice(np.arange(len(worker_names)), p=worker_speeds)
-                worker_name = worker_names[pt]
-
-                if self.get_worker_status(worker_name):
-                    break
-                else:
-                    self.remove_worker(worker_name)
-                    worker_speeds[pt] = 0
-                    norm = np.sum(worker_speeds)
-                    if norm < 1e-4:
-                        return ""
-                    worker_speeds = worker_speeds / norm
-                    continue
-            return worker_name
+            pt = np.random.choice(np.arange(len(worker_names)), p=worker_speeds)
+            return worker_names[pt]
         elif self.dispatch_method == DispatchMethod.SHORTEST_QUEUE:
             worker_names = []
             worker_qlen = []
@@ -167,7 +148,7 @@ class Controller:
                 if model_name in w_info.model_names:
                     worker_names.append(w_name)
                     worker_qlen.append(w_info.queue_length / w_info.speed)
-            if len(worker_names) == 0:
+            if not worker_names:
                 return ""
             min_index = np.argmin(worker_qlen)
             w_name = worker_names[min_index]
@@ -191,11 +172,11 @@ class Controller:
 
     def remove_stale_workers_by_expiration(self):
         expire = time.time() - CONTROLLER_HEART_BEAT_EXPIRATION
-        to_delete = []
-        for worker_name, w_info in self.worker_info.items():
-            if w_info.check_heart_beat and w_info.last_heart_beat < expire:
-                to_delete.append(worker_name)
-
+        to_delete = [
+            worker_name
+            for worker_name, w_info in self.worker_info.items()
+            if w_info.check_heart_beat and w_info.last_heart_beat < expire
+        ]
         for worker_name in to_delete:
             self.remove_worker(worker_name)
 
@@ -243,7 +224,7 @@ class Controller:
 
         try:
             response = requests.post(
-                worker_addr + "/worker_generate_stream",
+                f"{worker_addr}/worker_generate_stream",
                 json=params,
                 stream=True,
                 timeout=WORKER_API_TIMEOUT,

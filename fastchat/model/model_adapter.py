@@ -131,7 +131,7 @@ def raise_warning_for_incompatible_cpu_offloading_configuration(
                 "Continuing without cpu-offloading enabled\n"
             )
             return False
-        if not "linux" in sys.platform:
+        if "linux" not in sys.platform:
             warnings.warn(
                 "CPU-offloading is only supported on linux-systems due to the limited compatability with the bitsandbytes-package\n"
                 "Continuing without cpu-offloading enabled\n"
@@ -178,7 +178,7 @@ def load_model(
                 ] = "sequential"  # This is important for not the same VRAM sizes
                 available_gpu_memory = get_gpu_memory(num_gpus)
                 kwargs["max_memory"] = {
-                    i: str(int(available_gpu_memory[i] * 0.85)) + "GiB"
+                    i: f"{int(available_gpu_memory[i] * 0.85)}GiB"
                     for i in range(num_gpus)
                 }
             else:
@@ -204,9 +204,9 @@ def load_model(
         from transformers import BitsAndBytesConfig
 
         if "max_memory" in kwargs:
-            kwargs["max_memory"]["cpu"] = (
-                str(math.floor(psutil.virtual_memory().available / 2**20)) + "Mib"
-            )
+            kwargs["max_memory"][
+                "cpu"
+            ] = f"{str(math.floor(psutil.virtual_memory().available / 2**20))}Mib"
         kwargs["quantization_config"] = BitsAndBytesConfig(
             load_in_8bit_fp32_cpu_offload=cpu_offloading
         )
@@ -268,10 +268,9 @@ def load_model(
     # Load model
     model, tokenizer = adapter.load_model(model_path, kwargs)
 
-    if (device == "cuda" and num_gpus == 1 and not cpu_offloading) or device in (
-        "mps",
-        "xpu",
-    ):
+    if (
+        device == "cuda" and num_gpus == 1 and not cpu_offloading
+    ) or device in {"mps", "xpu"}:
         model.to(device)
 
     if device == "xpu":
@@ -311,16 +310,16 @@ def get_generate_stream_function(model: torch.nn.Module, model_path: str):
         # the right weights are available.
         @torch.inference_mode()
         def generate_stream_peft(
-            model,
-            tokenizer,
-            params: Dict,
-            device: str,
-            context_len: int,
-            stream_interval: int = 2,
-            judge_sent_end: bool = False,
-        ):
+                    model,
+                    tokenizer,
+                    params: Dict,
+                    device: str,
+                    context_len: int,
+                    stream_interval: int = 2,
+                    judge_sent_end: bool = False,
+                ):
             model.set_adapter(model_path)
-            for x in generate_stream(
+            yield from generate_stream(
                 model,
                 tokenizer,
                 params,
@@ -328,8 +327,7 @@ def get_generate_stream_function(model: torch.nn.Module, model_path: str):
                 context_len,
                 stream_interval,
                 judge_sent_end,
-            ):
-                yield x
+            )
 
         return generate_stream_peft
     else:
@@ -759,7 +757,7 @@ class MPTAdapter(BaseModelAdapter):
 
     def match(self, model_path: str):
         model_path = model_path.lower()
-        return "mpt" in model_path and not "airoboros" in model_path
+        return "mpt" in model_path and "airoboros" not in model_path
 
     def load_model(self, model_path: str, from_pretrained_kwargs: dict):
         revision = from_pretrained_kwargs.get("revision", "main")
@@ -851,7 +849,7 @@ class ChatGPTAdapter(BaseModelAdapter):
     """The model adapter for ChatGPT"""
 
     def match(self, model_path: str):
-        return model_path in ("gpt-3.5-turbo", "gpt-4")
+        return model_path in {"gpt-3.5-turbo", "gpt-4"}
 
     def load_model(self, model_path: str, from_pretrained_kwargs: dict):
         raise NotImplementedError()
@@ -864,7 +862,7 @@ class ClaudeAdapter(BaseModelAdapter):
     """The model adapter for Claude"""
 
     def match(self, model_path: str):
-        return model_path in ["claude-2", "claude-instant-1"]
+        return model_path in {"claude-2", "claude-instant-1"}
 
     def load_model(self, model_path: str, from_pretrained_kwargs: dict):
         raise NotImplementedError()

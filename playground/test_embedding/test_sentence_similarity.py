@@ -13,20 +13,16 @@ def get_embedding_from_api(word, model="vicuna-7b-v1.1"):
             model=model,
             input=word,
         )
-        embedding = np.array(resp["data"][0]["embedding"])
-        return embedding
-
+        return np.array(resp["data"][0]["embedding"])
     url = "http://localhost:8000/v1/embeddings"
     headers = {"Content-Type": "application/json"}
     data = json.dumps({"model": model, "input": word})
 
     response = requests.post(url, headers=headers, data=data)
     if response.status_code == 200:
-        embedding = np.array(response.json()["data"][0]["embedding"])
-        return embedding
-    else:
-        print(f"Error: {response.status_code} - {response.text}")
-        return None
+        return np.array(response.json()["data"][0]["embedding"])
+    print(f"Error: {response.status_code} - {response.text}")
+    return None
 
 
 def cosine_similarity(vec1, vec2):
@@ -47,10 +43,7 @@ texts = [
     "A completely different sentence",
 ]
 
-embeddings = {}
-for text in texts:
-    embeddings[text] = get_embedding_from_api(text)
-
+embeddings = {text: get_embedding_from_api(text) for text in texts}
 print("Vicuna-7B:")
 print_cosine_similarity(embeddings, texts)
 

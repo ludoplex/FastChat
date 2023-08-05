@@ -15,8 +15,7 @@ openai.api_base = "http://localhost:8000/v1"
 
 def test_list_models():
     model_list = openai.Model.list()
-    names = [x["id"] for x in model_list["data"]]
-    return names
+    return [x["id"] for x in model_list["data"]]
 
 
 def test_completion(model):

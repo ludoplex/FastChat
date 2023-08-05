@@ -33,7 +33,7 @@ def compute_elo(battles, K=4, SCALE=400, BASE=10, INIT_RATING=1000):
             sa = 1
         elif winner == "model_b":
             sa = 0
-        elif winner == "tie" or winner == "tie (bothbad)":
+        elif winner in ["tie", "tie (bothbad)"]:
             sa = 0.5
         else:
             raise Exception(f"unexpected vote {winner}")
@@ -45,7 +45,7 @@ def compute_elo(battles, K=4, SCALE=400, BASE=10, INIT_RATING=1000):
 
 def get_bootstrap_result(battles, func_compute_elo, num_round=1000):
     rows = []
-    for i in tqdm(range(num_round), desc="bootstrap"):
+    for _ in tqdm(range(num_round), desc="bootstrap"):
         tmp_battles = battles.sample(frac=1.0, replace=True)
         rows.append(func_compute_elo(tmp_battles))
     df = pd.DataFrame(rows)
@@ -92,9 +92,7 @@ def compute_pairwise_win_fraction(battles, model_order):
         prop_wins = row_beats_col_freq.mean(axis=1).sort_values(ascending=False)
         model_order = list(prop_wins.keys())
 
-    # Arrange ordering according to proprition of wins
-    row_beats_col = row_beats_col_freq.loc[model_order, model_order]
-    return row_beats_col
+    return row_beats_col_freq.loc[model_order, model_order]
 
 
 def visualize_leaderboard_table(rating):
@@ -107,8 +105,7 @@ def visualize_leaderboard_table(rating):
         3: "🥉",
     }
 
-    md = ""
-    md += "| Rank | Model | Elo Rating | Description |\n"
+    md = "" + "| Rank | Model | Elo Rating | Description |\n"
     md += "| --- | --- | --- | --- |\n"
     for i, model in enumerate(models):
         rank = i + 1

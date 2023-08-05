@@ -3,6 +3,7 @@ Sample some conversations from a file.
 
 Usage: python3 -m fastchat.data.sample --in sharegpt.json --out sampled.json
 """
+
 import argparse
 import json
 
@@ -27,10 +28,7 @@ if __name__ == "__main__":
     new_content = []
     for i in range(args.begin, min(args.end, len(content))):
         sample = content[i]
-        concat = ""
-        for s in sample["conversations"]:
-            concat += s["value"]
-
+        concat = "".join(s["value"] for s in sample["conversations"])
         if len(concat) > args.max_length:
             continue
 

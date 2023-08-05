@@ -61,8 +61,7 @@ class Chatbot:
         # Find "SNlM0e":"<ID>"
         if resp.status_code != 200:
             raise Exception("Could not get Google Bard")
-        SNlM0e = re.search(r"SNlM0e\":\"(.*?)\"", resp.text).group(1)
-        return SNlM0e
+        return re.search(r"SNlM0e\":\"(.*?)\"", resp.text)[1]
 
     async def ask(self, message: Message) -> Response:
         """
@@ -143,8 +142,7 @@ async def startup_event():
 
 @app.post("/chat", response_model=Response)
 async def chat(message: Message):
-    response = await chatbot.ask(message)
-    return response
+    return await chatbot.ask(message)
 
 
 if __name__ == "__main__":

@@ -147,10 +147,7 @@ def pairwise_to_gradio_chat_mds(question, ans_a, ans_b, turn=None):
             mds[6] = f"##### Reference Solution\nQ1. {ref[0]}\nQ2. {ref[1]}"
     else:
         x = ref[turn] if turn < len(ref) else ""
-        if x:
-            mds[6] = f"##### Reference Solution\n{ref[turn]}"
-        else:
-            mds[6] = ""
+        mds[6] = f"##### Reference Solution\n{ref[turn]}" if x else ""
     return mds
 
 
@@ -176,10 +173,7 @@ def single_to_gradio_chat_mds(question, ans, turn=None):
             mds[4] = f"##### Reference Solution\nQ1. {ref[0]}\nQ2. {ref[1]}"
     else:
         x = ref[turn] if turn < len(ref) else ""
-        if x:
-            mds[4] = f"##### Reference Solution\n{ref[turn]}"
-        else:
-            mds[4] = ""
+        mds[4] = f"##### Reference Solution\n{ref[turn]}" if x else ""
     return mds
 
 
@@ -219,10 +213,7 @@ def build_pairwise_browser_tab():
     with gr.Row():
         for i in range(num_sides):
             with gr.Column():
-                if i == 0:
-                    value = models[0]
-                else:
-                    value = "gpt-3.5-turbo"
+                value = models[0] if i == 0 else "gpt-3.5-turbo"
                 model_selectors[i] = gr.Dropdown(
                     choices=models,
                     value=value,
@@ -242,7 +233,7 @@ def build_pairwise_browser_tab():
                 if j == 0:
                     with gr.Column(scale=1, min_width=8):
                         gr.Markdown()
-    reference = gr.Markdown(elem_id=f"reference")
+    reference = gr.Markdown(elem_id="reference")
     chat_mds.append(reference)
 
     model_explanation = gr.Markdown(elem_id="model_explanation")
@@ -312,7 +303,7 @@ def build_single_answer_browser_tab():
                     with gr.Column(scale=1, min_width=8):
                         gr.Markdown()
 
-    reference = gr.Markdown(elem_id=f"reference")
+    reference = gr.Markdown(elem_id="reference")
     chat_mds.append(reference)
 
     model_explanation = gr.Markdown(elem_id="model_explanation")

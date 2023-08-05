@@ -84,11 +84,8 @@ def load_questions(question_file: str, begin: Optional[int], end: Optional[int])
     """Load questions from a file."""
     questions = []
     with open(question_file, "r") as ques_file:
-        for line in ques_file:
-            if line:
-                questions.append(json.loads(line))
-    questions = questions[begin:end]
-    return questions
+        questions.extend(json.loads(line) for line in ques_file if line)
+    return questions[begin:end]
 
 
 def load_model_answers(answer_dir: str):
@@ -166,20 +163,16 @@ def run_judge_single(question, answer, judge, ref_answer, multi_turn=False):
     else:
         raise ValueError(f"Invalid judge model name: {model}")
 
-    if judge.prompt_template["output_format"] == "[[rating]]":
-        match = re.search(one_score_pattern, judgment)
-        if not match:
-            match = re.search(one_score_pattern_backup, judgment)
-
-        if match:
-            rating = ast.literal_eval(match.groups()[0])
-        else:
-            rating = -1
-    else:
+    if judge.prompt_template["output_format"] != "[[rating]]":
         raise ValueError(
             f"invalid output format: {judge.prompt_template['output_format']}"
         )
 
+    match = re.search(one_score_pattern, judgment)
+    if not match:
+        match = re.search(one_score_pattern_backup, judgment)
+
+    rating = ast.literal_eval(match.groups()[0]) if match else -1
     return rating, user_prompt, judgment
 
 
@@ -233,8 +226,8 @@ def run_judge_pair(question, answer_a, answer_b, judge, ref_answer, multi_turn=F
         kwargs["ref_answer_1"] = ref_answer["choices"][0]["turns"][0]
         kwargs["ref_answer_2"] = ref_answer["choices"][0]["turns"][1]
 
+    system_prompt = judge.prompt_template["system_prompt"]
     if multi_turn:
-        system_prompt = judge.prompt_template["system_prompt"]
         user_prompt = judge.prompt_template["prompt_template"].format(
             question_1=question["turns"][0],
             question_2=question["turns"][1],
@@ -245,7 +238,6 @@ def run_judge_pair(question, answer_a, answer_b, judge, ref_answer, multi_turn=F
             **kwargs,
         )
     else:
-        system_prompt = judge.prompt_template["system_prompt"]
         user_prompt = judge.prompt_template["prompt_template"].format(
             question=question["turns"][0],
             answer_a=answer_a["choices"][0]["turns"][0],
@@ -470,14 +462,13 @@ def normalize_game_key_single(gamekey, result):
     qid, model_1, model_2 = gamekey
     if model_1 < model_2:
         return gamekey, result
-    else:
-        new_gamekey = (qid, model_2, model_1)
-        new_result = {
-            "winners": tuple(reverse_model_map.get(x, x) for x in result["winners"]),
-            "g1_judgment": result["g2_judgment"],
-            "g2_judgment": result["g1_judgment"],
-        }
-        return new_gamekey, new_result
+    new_gamekey = (qid, model_2, model_1)
+    new_result = {
+        "winners": tuple(reverse_model_map.get(x, x) for x in result["winners"]),
+        "g1_judgment": result["g2_judgment"],
+        "g2_judgment": result["g1_judgment"],
+    }
+    return new_gamekey, new_result
 
 
 def normalize_game_key_dict(judgment_dict):
@@ -509,10 +500,7 @@ def load_pairwise_model_judgments(filename: str):
             winner = obj["winner"]
         elif "g1_winner" in obj and "g2_winner" in obj:
             g1_winner, g2_winner = obj["g1_winner"], obj["g2_winner"]
-            if g1_winner == g2_winner:
-                winner = g1_winner
-            else:
-                winner = "inconsistent"
+            winner = g1_winner if g1_winner == g2_winner else "inconsistent"
         else:
             raise ValueError(f"Invalid keys: {list(obj.keys())}")
 
@@ -525,11 +513,10 @@ def load_pairwise_model_judgments(filename: str):
             "g2_judgment": obj["g2_judgment"],
         }
 
-    # Make the model names sorted in the game keys
-    normalized = {}
-    for judge, value in judge_dict.items():
-        normalized[judge] = normalize_game_key_dict(value)
-    return normalized
+    return {
+        judge: normalize_game_key_dict(value)
+        for judge, value in judge_dict.items()
+    }
 
 
 def load_single_model_judgments(filename: str):
@@ -653,5 +640,4 @@ def check_data(questions, model_answers, ref_answers, models, judges):
 
 def get_model_list(answer_dir):
     file_paths = glob.glob(f"{answer_dir}/*.jsonl")
-    file_names = [os.path.splitext(os.path.basename(f))[0] for f in file_paths]
-    return file_names
+    return [os.path.splitext(os.path.basename(f))[0] for f in file_paths]
